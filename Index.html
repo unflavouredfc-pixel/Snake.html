@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Neon Snake — Unflavoured Fc</title>
+<style>
+  :root{
+    --bg:#07090f; --card:#0f1420; --border:#1f2740;
+    --fg:#e6ecff; --muted:#8894b3;
+    --primary:#22d3ee; --accent:#a78bfa; --gem:#facc15;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 30%,#12203a 0%,#07090f 60%)}
+  .app{width:100%;max-width:440px;height:100svh;display:flex;flex-direction:column;
+    padding:10px 14px;position:relative}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .tabs{display:flex;gap:6px}
+  .tab{width:18px;height:6px;border-radius:99px;background:#2a3350;border:0;cursor:pointer;padding:0;transition:all .2s}
+  .tab.active{width:32px;background:var(--primary)}
+  .gems{display:inline-flex;align-items:center;gap:4px;background:rgba(250,204,21,.1);
+    border:1px solid rgba(250,204,21,.35);color:var(--gem);padding:3px 10px;border-radius:99px;
+    font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+  .view{flex:1;min-height:0;display:none;flex-direction:column}
+  .view.active{display:flex}
+  h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;
+    background:linear-gradient(135deg,#22d3ee,#a78bfa,#22d3ee);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .sub{color:var(--muted);font-size:13px;max-width:280px;text-align:center;margin:6px auto 0}
+  .home{align-items:center;justify-content:center;gap:22px;text-align:center}
+  .previewBox{width:180px;height:180px;border-radius:20px;border:1px solid rgba(34,211,238,.25);
+    background:rgba(15,20,32,.6);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 60px -12px rgba(34,211,238,.4)}
+  .btn{display:block;width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;
+    font-weight:800;font-size:15px;transition:transform .05s,filter .2s}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--primary);color:#001018}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(167,139,250,.35)}
+  .actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:260px}
+  .hint{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)}
+  .skinsHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .backBtn{background:rgba(15,20,32,.6);border:1px solid var(--border);color:var(--muted);
+    padding:5px 10px;border-radius:8px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer}
+  .skinsHead h2{margin:0;font-size:18px}
+  .grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-right:2px}
+  .card{background:rgba(15,20,32,.4);border:1px solid var(--border);border-radius:14px;
+    padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:border-color .15s,background .15s}
+  .card:hover{border-color:#3a4670}
+  .card.selected{border-color:var(--primary);background:rgba(34,211,238,.08);
+    box-shadow:0 0 20px -8px var(--primary)}
+  .card.locked{opacity:.75}
+  .thumb{width:88px;height:88px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg);position:relative;overflow:hidden}
+  .lockOverlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(7,9,15,.65);backdrop-filter:blur(2px);font-size:22px}
+  .cardName{font-size:12px;font-weight:800;text-align:center}
+  .cardDesc{font-size:10px;color:var(--muted);text-align:center;line-height:1.25}
+  .pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;letter-spacing:.1em;text-transform:uppercase}
+  .pill.equipped{color:var(--primary)}
+  .pill.equip{color:var(--muted)}
+  .pill.buy{background:rgba(250,204,21,.18);color:var(--gem)}
+  .pill.locked{background:#1a1f30;color:var(--muted)}
+  .playFooter{margin-top:8px}
+  .game{gap:8px}
+  .scoreRow{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  .score{color:var(--fg);font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+  .boardWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+  canvas#board{width:100%;max-width:min(92vw,420px);aspect-ratio:1;border-radius:16px;
+    border:1px solid rgba(34,211,238,.25);background:#050810;
+    box-shadow:0 0 50px -14px rgba(34,211,238,.4);touch-action:none}
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(7,9,15,.75);backdrop-filter:blur(4px);border-radius:16px;flex-direction:column;gap:12px}
+  .overlay.on{display:flex}
+  .overlay h3{margin:0;font-size:22px}
+  .overlay p{margin:0;color:var(--muted);font-size:12px}
+  .dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);
+    gap:6px;justify-content:center;user-select:none}
+  .dbtn{background:rgba(15,20,32,.7);border:1px solid var(--border);color:var(--fg);
+    border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;touch-action:manipulation}
+  .dbtn:active{background:rgba(34,211,238,.15);border-color:var(--primary)}
+  .dbtn.empty{visibility:hidden}
+  .gameCtrls{display:flex;gap:6px;justify-content:center}
+  .flash{position:absolute;top:44px;left:50%;transform:translateX(-50%);
+    background:rgba(7,9,15,.9);border:1px solid rgba(34,211,238,.4);color:var(--primary);
+    padding:6px 14px;border-radius:99px;font-size:12px;font-weight:800;z-index:50;
+    opacity:0;transition:opacity .2s;pointer-events:none}
+  .flash.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <div style="width:56px"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="home" aria-label="Home"></button>
+      <button class="tab" data-tab="skins" aria-label="Skins"></button>
+    </div>
+    <div class="gems"><span>💎</span><span id="gemCount">0</span></div>
+  </div>
+  <div class="flash" id="flash"></div>
+
+  <section class="view home active" id="view-home">
+    <div>
+      <div class="eyebrow">Unflavoured Fc Studios</div>
+      <h1>Neon Snake</h1>
+      <p class="sub">Every 100 points earns 1 💎. Spend gems to unlock new skins.</p>
+    </div>
+    <div class="previewBox"><canvas id="homePreview" width="140" height="140" style="width:140px;height:140px"></canvas></div>
+    <div class="actions">
+      <button class="btn primary" id="btnPlay">▶  Play</button>
+      <button class="btn ghost" id="btnGoSkins">Choose Skin</button>
+    </div>
+    <div class="hint">Swipe left →  Skins</div>
+  </section>
+
+  <section class="view" id="view-skins">
+    <div class="skinsHead">
+      <button class="backBtn" id="btnBackHome">← Home</button>
+      <h2>Snake Skins</h2>
+      <div style="width:56px"></div>
+    </div>
+    <div class="grid" id="skinGrid"></div>
+    <div class="playFooter"><button class="btn primary" id="btnPlay2">▶  Play</button></div>
+  </section>
+
+  <section class="view game" id="view-game">
+    <div class="scoreRow">
+      <button class="backBtn" id="btnQuit">← Home</button>
+      <div>Score <span class="score" id="scoreVal">0</span></div>
+      <div>Best <span class="score" id="highVal">0</span></div>
+    </div>
+    <div class="boardWrap" id="boardWrap">
+      <canvas id="board" width="400" height="400"></canvas>
+      <div class="overlay" id="overlay">
+        <h3 id="overTitle">Ready?</h3>
+        <p id="overMsg">Tap Start to play</p>
+        <button class="btn primary" id="btnStart" style="width:auto;padding:10px 22px">Start</button>
+      </div>
+    </div>
+    <div class="dpad">
+      <div class="dbtn empty"></div>
+      <button class="dbtn" data-dir="up">▲</button>
+      <div class="dbtn empty"></div>
+      <button class="dbtn" data-dir="left">◀</button>
+      <button class="dbtn" data-dir="down">▼</button>
+      <button class="dbtn" data-dir="right">▶</button>
+    </div>
+    <div class="gameCtrls">
+      <button class="btn ghost" id="btnPause" style="width:auto;padding:8px 18px">Pause</button>
+      <button class="btn ghost" id="btnRestart" style="width:auto;padding:8px 18px">Restart</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const SKINS = [
+    {id:'neon-cyan',    name:'Neon Cyan',      head:'#22d3ee', body:'34,211,238',  glow:'#22d3ee', desc:'The classic electric look.', price:0},
+    {id:'toxic-lime',   name:'Toxic Lime',     head:'#a3e635', body:'163,230,53',  glow:'#a3e635', desc:'Radioactive and hungry.',    price:10},
+    {id:'sunset-orange',name:'Sunset Orange',  head:'#fb923c', body:'251,146,60',  glow:'#fb923c', desc:'Warm arcade vibes.',         price:20},
+    {id:'royal-violet', name:'Royal Violet',   head:'#a78bfa', body:'167,139,250', glow:'#a78bfa', desc:'Smooth and majestic.',       price:50},
+    {id:'crimson-pulse',name:'Crimson Pulse',  head:'#f43f5e', body:'244,63,94',   glow:'#f43f5e', desc:'Fast, fierce, fiery.',       price:100},
+    {id:'golden-python',name:'Golden Python',  head:'#facc15', body:'250,204,21',  glow:'#facc15', desc:'Rare and dazzling.',         price:500},
+  ];
+  const DEFAULT = 'neon-cyan';
+  const getSkin = id => SKINS.find(s=>s.id===id) || SKINS[0];
+
+  const K_SKIN='ns_skin', K_GEMS='ns_gems', K_UNLOCK='ns_unlocked', K_HIGH='ns_high';
+  let skinId = localStorage.getItem(K_SKIN) || DEFAULT;
+  let gems   = parseInt(localStorage.getItem(K_GEMS)||'0',10)||0;
+  let unlocked;
+  try { unlocked = JSON.parse(localStorage.getItem(K_UNLOCK)||'[]'); if(!Array.isArray(unlocked)) unlocked=[]; }
+  catch(e){ unlocked=[]; }
+  if(!unlocked.includes(DEFAULT)) unlocked.push(DEFAULT);
+  let high = parseInt(localStorage.getItem(K_HIGH)||'0',10)||0;
+
+  const save = () => {
+    localStorage.setItem(K_SKIN, skinId);
+    localStorage.setItem(K_GEMS, String(gems));
+    localStorage.setItem(K_UNLOCK, JSON.stringify(unlocked));
+    localStorage.setItem(K_HIGH, String(high));
+  };
+
+  const $ = id => document.getElementById(id);
+  const views = { home:$('view-home'), skins:$('view-skins'), game:$('view-game') };
+  const tabs  = document.querySelectorAll('.tab');
+  const gemCount = $('gemCount');
+  const flashEl  = $('flash');
+
+  function updateGems(){ gemCount.textContent = gems; }
+  function flash(msg){
+    flashEl.textContent = msg; flashEl.classList.add('on');
+    clearTimeout(flash._t);
+    flash._t = setTimeout(()=>flashEl.classList.remove('on'), 1600);
+  }
+
+  function showView(name){
+    Object.entries(views).forEach(([k,el])=>el.classList.toggle('active', k===name));
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    if(name==='home') drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
+    if(name==='skins') renderSkins();
+    if(name==='game') startGame(); else stopGame();
+  }
+
+  tabs.forEach(t=>t.addEventListener('click', ()=>{
+    const n=t.dataset.tab; if(n==='home'||n==='skins') showView(n);
+  }));
+  $('btnPlay').onclick     = ()=>showView('game');
+  $('btnPlay2').onclick    = ()=>showView('game');
+  $('btnGoSkins').onclick  = ()=>showView('skins');
+  $('btnBackHome').onclick = ()=>showView('home');
+  $('btnQuit').onclick     = ()=>showView('home');
+
+  function drawPreview(ctx, skin, size){
+    const cells=5, cell=size/cells;
+    ctx.clearRect(0,0,size,size);
+    const g=ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/1.5);
+    g.addColorStop(0, skin.glow+'55'); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle='#f472b6'; ctx.shadowColor='#f472b6'; ctx.shadowBlur=8;
+    ctx.fillRect(cell*0.5+2, cell*0.5+2, cell-6, cell-6);
+    ctx.shadowBlur=0;
+    for(let i=0;i<4;i++){
+      const isHead=i===3;
+      ctx.fillStyle = isHead? skin.head : `rgba(${skin.body},${0.4+i*0.15})`;
+      if(isHead){ ctx.shadowColor=skin.glow; ctx.shadowBlur=10; }
+      ctx.fillRect(cell*(i+0.5)+2, cell*2+2, cell-6, cell-6);
+      ctx.shadowBlur=0;
+    }
+  }
+
+  const grid = $('skinGrid');
+  function renderSkins(){
+    grid.innerHTML='';
+    SKINS.forEach(s=>{
+      const isUnlocked = unlocked.includes(s.id);
+      const selected   = s.id===skinId;
+      const canAfford  = gems>=s.price;
+      const card=document.createElement('button');
+      card.className='card'+(selected?' selected':'')+(!isUnlocked?' locked':'');
+      card.innerHTML = `
+        <div class="thumb"><canvas width="88" height="88"></canvas>
+          ${isUnlocked?'':'<div class="lockOverlay">🔒</div>'}
+        </div>
+        <div class="cardName">${s.name}</div>
+        <div class="cardDesc">${s.desc}</div>
+        <div class="pill ${selected?'equipped':isUnlocked?'equip':canAfford?'buy':'locked'}">
+          ${selected?'✓ Equipped':isUnlocked?'Tap to equip':`💎 ${s.price} ${canAfford?'Buy':'Locked'}`}
+        </div>`;
+      drawPreview(card.querySelector('canvas').getContext('2d'), s, 88);
+      card.onclick = ()=>selectSkin(s.id);
+      grid.appendChild(card);
+    });
+  }
+
+  function selectSkin(id){
+    const s = getSkin(id);
+    if(!unlocked.includes(id)){
+      if(gems >= s.price){
+        gems -= s.price; unlocked.push(id); skinId=id; save();
+        updateGems(); flash(`Unlocked ${s.name}!`); renderSkins();
+      } else {
+        flash(`Need ${s.price-gems} more 💎`);
+      }
+      return;
+    }
+    skinId=id; save(); renderSkins();
+  }
+
+  const board = $('board');
+  const bctx  = board.getContext('2d');
+  const CELLS = 20;
+  let snake, dir, nextDir, food, score, prevScore, running, paused, timer, speed;
+  const START_SPEED=150, MIN_SPEED=80, DEC=3;
+
+  function fitCanvas(){
+    const dpr = window.devicePixelRatio||1;
+    const cssW = board.clientWidth;
+    board.width  = Math.round(cssW*dpr);
+    board.height = Math.round(cssW*dpr);
+    bctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function resetGame(){
+    snake = [{x:8,y:10},{x:9,y:10},{x:10,y:10}];
+    dir = {x:1,y:0}; nextDir = dir;
+    score=0; prevScore=0; speed=START_SPEED;
+    food = randFood();
+    $('scoreVal').textContent='0';
+    $('highVal').textContent=high;
+  }
+
+  function randFood(){
+    while(true){
+      const f={x:Math.floor(Math.random()*CELLS), y:Math.floor(Math.random()*CELLS)};
+      if(!snake.some(s=>s.x===f.x&&s.y===f.y)) return f;
+    }
+  }
+
+  function draw(){
+    const size = board.clientWidth;
+    const cell = size/CELLS;
+    bctx.clearRect(0,0,size,size);
+    bctx.fillStyle='#050810'; bctx.fillRect(0,0,size,size);
+    bctx.fillStyle='#f472b6'; bctx.shadowColor='#f472b6'; bctx.shadowBlur=12;
+    bctx.fillRect(food.x*cell+2, food.y*cell+2, cell-4, cell-4);
+    bctx.shadowBlur=0;
+    const sk = getSkin(skinId);
+    snake.forEach((seg,i)=>{
+      const isHead = i===snake.length-1;
+      if(isHead){ bctx.fillStyle=sk.head; bctx.shadowColor=sk.glow; bctx.shadowBlur=14; }
+      else { bctx.fillStyle=`rgba(${sk.body},${0.35+i/snake.length*0.6})`; bctx.shadowBlur=0; }
+      bctx.fillRect(seg.x*cell+1, seg.y*cell+1, cell-2, cell-2);
+    });
+    bctx.shadowBlur=0;
+  }
+
+  function step(){
+    dir = nextDir;
+    const head = snake[snake.length-1];
+    const nh = {x:head.x+dir.x, y:head.y+dir.y};
+    if(nh.x<0||nh.y<0||nh.x>=CELLS||nh.y>=CELLS||snake.some(s=>s.x===nh.x&&s.y===nh.y)){
+      gameOver(); return;
+    }
+    snake.push(nh);
+    if(nh.x===food.x&&nh.y===food.y){
+      prevScore=score; score+=10;
+      const earned = Math.floor(score/100)-Math.floor(prevScore/100);
+      if(earned>0){ gems+=earned; updateGems(); flash(`+${earned} 💎`); save(); }
+      $('scoreVal').textContent=score;
+      food=randFood();
+      speed=Math.max(MIN_SPEED, speed-DEC);
+    } else {
+      snake.shift();
+    }
+    draw();
+    timer=setTimeout(step, speed);
+  }
+
+  function gameOver(){
+    running=false; clearTimeout(timer);
+    if(score>high){ high=score; save(); $('highVal').textContent=high; }
+    $('overTitle').textContent='Game Over';
+    $('overMsg').textContent=`Score ${score} · Best ${high}`;
+    $('btnStart').textContent='Play Again';
+    $('overlay').classList.add('on');
+  }
+
+  function startGame(){
+    fitCanvas(); resetGame(); draw();
+    $('overTitle').textContent='Ready?';
+    $('overMsg').textContent='Tap Start to play';
+    $('btnStart').textContent='Start';
+    $('overlay').classList.add('on');
+    running=false; paused=false;
+  }
+  function stopGame(){ clearTimeout(timer); running=false; }
+
+  $('btnStart').onclick = ()=>{
+    if(!running){
+      if($('overTitle').textContent==='Game Over') resetGame();
+      running=true; paused=false;
+      $('overlay').classList.remove('on');
+      clearTimeout(timer); timer=setTimeout(step, speed);
+    }
+  };
+  $('btnPause').onclick = ()=>{
+    if(!running) return;
+    paused=true; clearTimeout(timer);
+    $('overTitle').textContent='Paused';
+    $('overMsg').textContent='Tap Resume to continue';
+    $('btnStart').textContent='Resume';
+    $('overlay').classList.add('on');
+    running=false;
+  };
+  $('btnRestart').onclick = ()=>{ stopGame(); startGame(); };
+
+  function turn(d){
+    const map={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+    const n=map[d]; if(!n) return;
+    if(n.x===-dir.x && n.y===-dir.y) return;
+    nextDir=n;
+  }
+  document.querySelectorAll('.dbtn[data-dir]').forEach(b=>{
+    b.addEventListener('click', ()=>turn(b.dataset.dir));
+  });
+  document.addEventListener('keydown', e=>{
+    const k=e.key.toLowerCase();
+    if(k==='arrowup'||k==='w') turn('up');
+    else if(k==='arrowdown'||k==='s') turn('down');
+    else if(k==='arrowleft'||k==='a') turn('left');
+    else if(k==='arrowright'||k==='d') turn('right');
+    else if(k===' ') $('btnPause').click();
+  });
+  let sx=0,sy=0;
+  board.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+  board.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<20&&Math.abs(dy)<20) return;
+    if(Math.abs(dx)>Math.abs(dy)) turn(dx>0?'right':'left');
+    else turn(dy>0?'down':'up');
+  }, {passive:true});
+
+  let ssx=0,ssy=0;
+  const appEl = document.getElementById('app');
+  appEl.addEventListener('touchstart', e=>{
+    if(views.game.classList.contains('active')) return;
+    ssx=e.touches[0].clientX; ssy=e.touches[0].clientY;
+  }, {passive:true});
+  appEl.addEventListener('touchend', e=>{
+    if(views.game.classList.contains('active')) return;
+    const dx=e.changedTouches[0].clientX-ssx, dy=e.changedTouches[0].clientY-ssy;
+    if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)) return;
+    if(dx<0 && views.home.classList.contains('active')) showView('skins');
+    else if(dx>0 && views.skins.classList.contains('active')) showView('home');
+  }, {passive:true});
+
+  window.addEventListener('resize', ()=>{ if(views.game.classList.contains('active')){ fitCanvas(); draw(); } });
+
+  updateGems();
+  showView('home');
+})();
+</script>
+</body>
+</html>
