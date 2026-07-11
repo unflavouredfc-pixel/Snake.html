@@ -411,15 +411,8 @@ function step(){
   dir = nextDir;
   const head = snake[snake.length-1];
   const nh = {x:head.x+dir.x, y:head.y+dir.y};
-  if (
-  nh.x < 0 ||
-  nh.y < 0 ||
-  nh.x >= CELLS ||
-  nh.y >= CELLS ||
-  snake.some(s => s.x === nh.x && s.y === nh.y)
-) {
-  gameOver();
-  return;
+    if(nh.x<0||nh.y<0||nh.x>=CELLS||nh.y>=CELLS||snake.some(s=>s.x===nh.x&&s.y===nh.y)){
+    gameOver(); return;
   }
   snake.push(nh);
   if(nh.x===food.x&&nh.y===food.y){
