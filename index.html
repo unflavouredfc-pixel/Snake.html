@@ -18,13 +18,16 @@
     background:radial-gradient(circle at 50% 30%,#12203a 0%,#07090f 60%)}
   .app{width:100%;max-width:440px;height:100svh;display:flex;flex-direction:column;
     padding:10px 14px;position:relative}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px}
   .tabs{display:flex;gap:6px}
   .tab{width:18px;height:6px;border-radius:99px;background:#2a3350;border:0;cursor:pointer;padding:0;transition:all .2s}
   .tab.active{width:32px;background:var(--primary)}
   .gems{display:inline-flex;align-items:center;gap:4px;background:rgba(250,204,21,.1);
     border:1px solid rgba(250,204,21,.35);color:var(--gem);padding:3px 10px;border-radius:99px;
     font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+  .userBtn{background:rgba(15,20,32,.6);border:1px solid var(--border);color:var(--fg);
+    padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;
+    max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .view{flex:1;min-height:0;display:none;flex-direction:column}
   .view.active{display:flex}
   h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;
@@ -41,6 +44,7 @@
   .btn:active{transform:scale(.98)}
   .btn.primary{background:var(--primary);color:#001018}
   .btn.primary:hover{filter:brightness(1.1)}
+  .btn.primary:disabled{opacity:.5;cursor:not-allowed}
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(167,139,250,.35)}
   .actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:260px}
   .hint{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)}
@@ -92,12 +96,41 @@
     padding:6px 14px;border-radius:99px;font-size:12px;font-weight:800;z-index:50;
     opacity:0;transition:opacity .2s;pointer-events:none}
   .flash.on{opacity:1}
+
+  /* Auth modal */
+  .modalBg{position:fixed;inset:0;background:rgba(3,5,10,.82);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+  .modalBg.on{display:flex}
+  .modal{width:100%;max-width:360px;background:linear-gradient(180deg,#101627,#0a0f1c);
+    border:1px solid rgba(34,211,238,.3);border-radius:20px;padding:22px;
+    box-shadow:0 20px 70px -20px rgba(34,211,238,.4)}
+  .modal h2{margin:0 0 4px;font-size:22px;font-weight:900;
+    background:linear-gradient(135deg,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .modal p.mSub{margin:0 0 16px;color:var(--muted);font-size:12px}
+  .segRow{display:flex;background:rgba(15,20,32,.6);border:1px solid var(--border);
+    border-radius:10px;padding:3px;margin-bottom:14px}
+  .seg{flex:1;background:transparent;border:0;color:var(--muted);padding:8px;
+    font-weight:700;font-size:12px;border-radius:8px;cursor:pointer}
+  .seg.active{background:rgba(34,211,238,.15);color:var(--primary)}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .field label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .field input{background:rgba(7,9,15,.6);border:1px solid var(--border);color:var(--fg);
+    padding:11px 12px;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+  .field input:focus{border-color:var(--primary)}
+  .field .hintMsg{font-size:10px;color:var(--muted);min-height:12px}
+  .field .hintMsg.ok{color:#4ade80}
+  .field .hintMsg.err{color:#f87171}
+  .errBox{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.35);
+    color:#fca5a5;padding:8px 10px;border-radius:8px;font-size:12px;margin-bottom:10px;display:none}
+  .errBox.on{display:block}
+  .modalFoot{display:flex;justify-content:center;margin-top:12px}
+  .linkBtn{background:transparent;border:0;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <div class="topbar">
-    <div style="width:56px"></div>
+    <button class="userBtn" id="userBtn">Sign In</button>
     <div class="tabs">
       <button class="tab active" data-tab="home" aria-label="Home"></button>
       <button class="tab" data-tab="skins" aria-label="Skins"></button>
@@ -159,275 +192,485 @@
   </section>
 </div>
 
-<script>
-(function(){
-  'use strict';
-  const SKINS = [
-    {id:'neon-cyan',    name:'Neon Cyan',      head:'#22d3ee', body:'34,211,238',  glow:'#22d3ee', desc:'The classic electric look.', price:0},
-    {id:'toxic-lime',   name:'Toxic Lime',     head:'#a3e635', body:'163,230,53',  glow:'#a3e635', desc:'Radioactive and hungry.',    price:10},
-    {id:'sunset-orange',name:'Sunset Orange',  head:'#fb923c', body:'251,146,60',  glow:'#fb923c', desc:'Warm arcade vibes.',         price:20},
-    {id:'royal-violet', name:'Royal Violet',   head:'#a78bfa', body:'167,139,250', glow:'#a78bfa', desc:'Smooth and majestic.',       price:50},
-    {id:'crimson-pulse',name:'Crimson Pulse',  head:'#f43f5e', body:'244,63,94',   glow:'#f43f5e', desc:'Fast, fierce, fiery.',       price:100},
-    {id:'golden-python',name:'Golden Python',  head:'#facc15', body:'250,204,21',  glow:'#facc15', desc:'Rare and dazzling.',         price:500},
-  ];
-  const DEFAULT = 'neon-cyan';
-  const getSkin = id => SKINS.find(s=>s.id===id) || SKINS[0];
+<!-- Auth Modal -->
+<div class="modalBg" id="authModal">
+  <div class="modal">
+    <h2 id="authTitle">Create Your Account</h2>
+    <p class="mSub" id="authSub">Sign up to save your progress across devices.</p>
+    <div class="segRow">
+      <button class="seg active" data-mode="signup">Sign Up</button>
+      <button class="seg" data-mode="signin">Sign In</button>
+    </div>
+    <div class="errBox" id="authErr"></div>
+    <div class="field" id="fUsername">
+      <label>Username <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(3–20 chars, letters/numbers/_)</span></label>
+      <input id="inUsername" type="text" autocomplete="username" maxlength="20" />
+      <div class="hintMsg" id="hUsername"></div>
+    </div>
+    <div class="field">
+      <label>Password <span id="pwHint" style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(min 6 chars)</span></label>
+      <input id="inPassword" type="password" autocomplete="new-password" />
+    </div>
+    <button class="btn primary" id="btnAuthSubmit">Create Account</button>
+    <div class="modalFoot">
+      <button class="linkBtn" id="btnAuthSkip">Skip for now</button>
+    </div>
+  </div>
+</div>
 
-  const K_SKIN='ns_skin', K_GEMS='ns_gems', K_UNLOCK='ns_unlocked', K_HIGH='ns_high';
-  let skinId = localStorage.getItem(K_SKIN) || DEFAULT;
-  let gems   = parseInt(localStorage.getItem(K_GEMS)||'0',10)||0;
-  let unlocked;
-  try { unlocked = JSON.parse(localStorage.getItem(K_UNLOCK)||'[]'); if(!Array.isArray(unlocked)) unlocked=[]; }
-  catch(e){ unlocked=[]; }
-  if(!unlocked.includes(DEFAULT)) unlocked.push(DEFAULT);
-  let high = parseInt(localStorage.getItem(K_HIGH)||'0',10)||0;
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-  const save = () => {
-    localStorage.setItem(K_SKIN, skinId);
-    localStorage.setItem(K_GEMS, String(gems));
-    localStorage.setItem(K_UNLOCK, JSON.stringify(unlocked));
-    localStorage.setItem(K_HIGH, String(high));
-  };
+const SUPABASE_URL = 'https://turmnrcpzbeillbcjjnd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_uHiFUNkmAcvL08naWi8UKg_eBY2CsDR';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storage: localStorage }
+});
 
-  const $ = id => document.getElementById(id);
-  const views = { home:$('view-home'), skins:$('view-skins'), game:$('view-game') };
-  const tabs  = document.querySelectorAll('.tab');
-  const gemCount = $('gemCount');
-  const flashEl  = $('flash');
+'use strict';
+const SKINS = [
+  {id:'neon-cyan',    name:'Neon Cyan',      head:'#22d3ee', body:'34,211,238',  glow:'#22d3ee', desc:'The classic electric look.', price:0},
+  {id:'toxic-lime',   name:'Toxic Lime',     head:'#a3e635', body:'163,230,53',  glow:'#a3e635', desc:'Radioactive and hungry.',    price:10},
+  {id:'sunset-orange',name:'Sunset Orange',  head:'#fb923c', body:'251,146,60',  glow:'#fb923c', desc:'Warm arcade vibes.',         price:20},
+  {id:'royal-violet', name:'Royal Violet',   head:'#a78bfa', body:'167,139,250', glow:'#a78bfa', desc:'Smooth and majestic.',       price:50},
+  {id:'crimson-pulse',name:'Crimson Pulse',  head:'#f43f5e', body:'244,63,94',   glow:'#f43f5e', desc:'Fast, fierce, fiery.',       price:100},
+  {id:'golden-python',name:'Golden Python',  head:'#facc15', body:'250,204,21',  glow:'#facc15', desc:'Rare and dazzling.',         price:500},
+];
+const DEFAULT = 'neon-cyan';
+const getSkin = id => SKINS.find(s=>s.id===id) || SKINS[0];
 
-  function updateGems(){ gemCount.textContent = gems; }
-  function flash(msg){
-    flashEl.textContent = msg; flashEl.classList.add('on');
-    clearTimeout(flash._t);
-    flash._t = setTimeout(()=>flashEl.classList.remove('on'), 1600);
+const K_SKIN='ns_skin', K_GEMS='ns_gems', K_UNLOCK='ns_unlocked', K_HIGH='ns_high', K_SEEN='ns_seen_auth', K_RESET='ns_reset_v2';
+if(!localStorage.getItem(K_RESET)){
+  [K_SKIN,K_GEMS,K_UNLOCK,K_HIGH,K_SEEN].forEach(k=>localStorage.removeItem(k));
+  localStorage.setItem(K_RESET,'1');
+}
+let skinId = localStorage.getItem(K_SKIN) || DEFAULT;
+let gems   = parseInt(localStorage.getItem(K_GEMS)||'0',10)||0;
+let unlocked;
+try { unlocked = JSON.parse(localStorage.getItem(K_UNLOCK)||'[]'); if(!Array.isArray(unlocked)) unlocked=[]; }
+catch(e){ unlocked=[]; }
+if(!unlocked.includes(DEFAULT)) unlocked.push(DEFAULT);
+let high = parseInt(localStorage.getItem(K_HIGH)||'0',10)||0;
+
+let currentUser = null;
+let currentUsername = null;
+let saveTimer = null;
+
+const saveLocal = () => {
+  localStorage.setItem(K_SKIN, skinId);
+  localStorage.setItem(K_GEMS, String(gems));
+  localStorage.setItem(K_UNLOCK, JSON.stringify(unlocked));
+  localStorage.setItem(K_HIGH, String(high));
+};
+const save = () => {
+  saveLocal();
+  if(currentUser){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async ()=>{
+      await sb.from('profiles').update({
+        gems, high_score: high, unlocked_skins: unlocked, current_skin: skinId
+      }).eq('user_id', currentUser.id);
+    }, 400);
   }
+};
 
-  function showView(name){
-    Object.entries(views).forEach(([k,el])=>el.classList.toggle('active', k===name));
-    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
-    if(name==='home') drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
-    if(name==='skins') renderSkins();
-    if(name==='game') startGame(); else stopGame();
-  }
+const $ = id => document.getElementById(id);
+const views = { home:$('view-home'), skins:$('view-skins'), game:$('view-game') };
+const tabs  = document.querySelectorAll('.tab');
+const gemCount = $('gemCount');
+const flashEl  = $('flash');
+const userBtn  = $('userBtn');
 
-  tabs.forEach(t=>t.addEventListener('click', ()=>{
-    const n=t.dataset.tab; if(n==='home'||n==='skins') showView(n);
-  }));
-  $('btnPlay').onclick     = ()=>showView('game');
-  $('btnPlay2').onclick    = ()=>showView('game');
-  $('btnGoSkins').onclick  = ()=>showView('skins');
-  $('btnBackHome').onclick = ()=>showView('home');
-  $('btnQuit').onclick     = ()=>showView('home');
+function updateGems(){ gemCount.textContent = gems; }
+function updateUserBtn(){
+  userBtn.textContent = currentUsername ? '@'+currentUsername : 'Sign In';
+}
+function flash(msg){
+  flashEl.textContent = msg; flashEl.classList.add('on');
+  clearTimeout(flash._t);
+  flash._t = setTimeout(()=>flashEl.classList.remove('on'), 1600);
+}
 
-  function drawPreview(ctx, skin, size){
-    const cells=5, cell=size/cells;
-    ctx.clearRect(0,0,size,size);
-    const g=ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/1.5);
-    g.addColorStop(0, skin.glow+'55'); g.addColorStop(1,'transparent');
-    ctx.fillStyle=g; ctx.fillRect(0,0,size,size);
-    ctx.fillStyle='#f472b6'; ctx.shadowColor='#f472b6'; ctx.shadowBlur=8;
-    ctx.fillRect(cell*0.5+2, cell*0.5+2, cell-6, cell-6);
+function showView(name){
+  Object.entries(views).forEach(([k,el])=>el.classList.toggle('active', k===name));
+  tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  if(name==='home') drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
+  if(name==='skins') renderSkins();
+  if(name==='game') startGame(); else stopGame();
+}
+
+tabs.forEach(t=>t.addEventListener('click', ()=>{
+  const n=t.dataset.tab; if(n==='home'||n==='skins') showView(n);
+}));
+$('btnPlay').onclick     = ()=>showView('game');
+$('btnPlay2').onclick    = ()=>showView('game');
+$('btnGoSkins').onclick  = ()=>showView('skins');
+$('btnBackHome').onclick = ()=>showView('home');
+$('btnQuit').onclick     = ()=>showView('home');
+
+function drawPreview(ctx, skin, size){
+  const cells=5, cell=size/cells;
+  ctx.clearRect(0,0,size,size);
+  const g=ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/1.5);
+  g.addColorStop(0, skin.glow+'55'); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.fillRect(0,0,size,size);
+  ctx.fillStyle='#f472b6'; ctx.shadowColor='#f472b6'; ctx.shadowBlur=8;
+  ctx.fillRect(cell*0.5+2, cell*0.5+2, cell-6, cell-6);
+  ctx.shadowBlur=0;
+  for(let i=0;i<4;i++){
+    const isHead=i===3;
+    ctx.fillStyle = isHead? skin.head : `rgba(${skin.body},${0.4+i*0.15})`;
+    if(isHead){ ctx.shadowColor=skin.glow; ctx.shadowBlur=10; }
+    ctx.fillRect(cell*(i+0.5)+2, cell*2+2, cell-6, cell-6);
     ctx.shadowBlur=0;
-    for(let i=0;i<4;i++){
-      const isHead=i===3;
-      ctx.fillStyle = isHead? skin.head : `rgba(${skin.body},${0.4+i*0.15})`;
-      if(isHead){ ctx.shadowColor=skin.glow; ctx.shadowBlur=10; }
-      ctx.fillRect(cell*(i+0.5)+2, cell*2+2, cell-6, cell-6);
-      ctx.shadowBlur=0;
-    }
   }
+}
 
-  const grid = $('skinGrid');
-  function renderSkins(){
-    grid.innerHTML='';
-    SKINS.forEach(s=>{
-      const isUnlocked = unlocked.includes(s.id);
-      const selected   = s.id===skinId;
-      const canAfford  = gems>=s.price;
-      const card=document.createElement('button');
-      card.className='card'+(selected?' selected':'')+(!isUnlocked?' locked':'');
-      card.innerHTML = `
-        <div class="thumb"><canvas width="88" height="88"></canvas>
-          ${isUnlocked?'':'<div class="lockOverlay">🔒</div>'}
-        </div>
-        <div class="cardName">${s.name}</div>
-        <div class="cardDesc">${s.desc}</div>
-        <div class="pill ${selected?'equipped':isUnlocked?'equip':canAfford?'buy':'locked'}">
-          ${selected?'✓ Equipped':isUnlocked?'Tap to equip':`💎 ${s.price} ${canAfford?'Buy':'Locked'}`}
-        </div>`;
-      drawPreview(card.querySelector('canvas').getContext('2d'), s, 88);
-      card.onclick = ()=>selectSkin(s.id);
-      grid.appendChild(card);
-    });
-  }
-
-  function selectSkin(id){
-    const s = getSkin(id);
-    if(!unlocked.includes(id)){
-      if(gems >= s.price){
-        gems -= s.price; unlocked.push(id); skinId=id; save();
-        updateGems(); flash(`Unlocked ${s.name}!`); renderSkins();
-      } else {
-        flash(`Need ${s.price-gems} more 💎`);
-      }
-      return;
-    }
-    skinId=id; save(); renderSkins();
-  }
-
-  const board = $('board');
-  const bctx  = board.getContext('2d');
-  const CELLS = 20;
-  let snake, dir, nextDir, food, score, prevScore, running, paused, timer, speed;
-  const START_SPEED=150, MIN_SPEED=80, DEC=3;
-
-  function fitCanvas(){
-    const dpr = window.devicePixelRatio||1;
-    const cssW = board.clientWidth;
-    board.width  = Math.round(cssW*dpr);
-    board.height = Math.round(cssW*dpr);
-    bctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-
-  function resetGame(){
-    snake = [{x:8,y:10},{x:9,y:10},{x:10,y:10}];
-    dir = {x:1,y:0}; nextDir = dir;
-    score=0; prevScore=0; speed=START_SPEED;
-    food = randFood();
-    $('scoreVal').textContent='0';
-    $('highVal').textContent=high;
-  }
-
-  function randFood(){
-    while(true){
-      const f={x:Math.floor(Math.random()*CELLS), y:Math.floor(Math.random()*CELLS)};
-      if(!snake.some(s=>s.x===f.x&&s.y===f.y)) return f;
-    }
-  }
-
-  function draw(){
-    const size = board.clientWidth;
-    const cell = size/CELLS;
-    bctx.clearRect(0,0,size,size);
-    bctx.fillStyle='#050810'; bctx.fillRect(0,0,size,size);
-    bctx.fillStyle='#f472b6'; bctx.shadowColor='#f472b6'; bctx.shadowBlur=12;
-    bctx.fillRect(food.x*cell+2, food.y*cell+2, cell-4, cell-4);
-    bctx.shadowBlur=0;
-    const sk = getSkin(skinId);
-    snake.forEach((seg,i)=>{
-      const isHead = i===snake.length-1;
-      if(isHead){ bctx.fillStyle=sk.head; bctx.shadowColor=sk.glow; bctx.shadowBlur=14; }
-      else { bctx.fillStyle=`rgba(${sk.body},${0.35+i/snake.length*0.6})`; bctx.shadowBlur=0; }
-      bctx.fillRect(seg.x*cell+1, seg.y*cell+1, cell-2, cell-2);
-    });
-    bctx.shadowBlur=0;
-  }
-
-  function step(){
-    dir = nextDir;
-    const head = snake[snake.length-1];
-    const nh = {x:head.x+dir.x, y:head.y+dir.y};
-    if(nh.x<0||nh.y<0||nh.x>=CELLS||nh.y>=CELLS||snake.some(s=>s.x===nh.x&&s.y===nh.y)){
-      gameOver(); return;
-    }
-    snake.push(nh);
-    if(nh.x===food.x&&nh.y===food.y){
-      prevScore=score; score+=10;
-      const earned = Math.floor(score/100)-Math.floor(prevScore/100);
-      if(earned>0){ gems+=earned; updateGems(); flash(`+${earned} 💎`); save(); }
-      $('scoreVal').textContent=score;
-      food=randFood();
-      speed=Math.max(MIN_SPEED, speed-DEC);
+const grid = $('skinGrid');
+function renderSkins(){
+  grid.innerHTML='';
+  SKINS.forEach(s=>{
+    const isUnlocked = unlocked.includes(s.id);
+    const selected   = s.id===skinId;
+    const canAfford  = gems>=s.price;
+    const card=document.createElement('button');
+    card.className='card'+(selected?' selected':'')+(!isUnlocked?' locked':'');
+    card.innerHTML = `
+      <div class="thumb"><canvas width="88" height="88"></canvas>
+        ${isUnlocked?'':'<div class="lockOverlay">🔒</div>'}
+      </div>
+      <div class="cardName">${s.name}</div>
+      <div class="cardDesc">${s.desc}</div>
+      <div class="pill ${selected?'equipped':isUnlocked?'equip':canAfford?'buy':'locked'}">
+        ${selected?'✓ Equipped':isUnlocked?'Tap to equip':`💎 ${s.price} ${canAfford?'Buy':'Locked'}`}
+      </div>`;
+    drawPreview(card.querySelector('canvas').getContext('2d'), s, 88);
+    card.onclick = ()=>selectSkin(s.id);
+    grid.appendChild(card);
+  });
+}
+function selectSkin(id){
+  const s = getSkin(id);
+  if(!unlocked.includes(id)){
+    if(gems >= s.price){
+      gems -= s.price; unlocked.push(id); skinId=id; save();
+      updateGems(); flash(`Unlocked ${s.name}!`); renderSkins();
     } else {
-      snake.shift();
+      flash(`Need ${s.price-gems} more 💎`);
     }
-    draw();
-    timer=setTimeout(step, speed);
+    return;
   }
+  skinId=id; save(); renderSkins();
+}
 
-  function gameOver(){
-    running=false; clearTimeout(timer);
-    if(score>high){ high=score; save(); $('highVal').textContent=high; }
-    $('overTitle').textContent='Game Over';
-    $('overMsg').textContent=`Score ${score} · Best ${high}`;
-    $('btnStart').textContent='Play Again';
-    $('overlay').classList.add('on');
+const board = $('board');
+const bctx  = board.getContext('2d');
+const CELLS = 20;
+let snake, dir, nextDir, food, score, prevScore, running, paused, timer, speed;
+const START_SPEED=150, MIN_SPEED=80, DEC=3;
+
+function fitCanvas(){
+  const dpr = window.devicePixelRatio||1;
+  const cssW = board.clientWidth;
+  board.width  = Math.round(cssW*dpr);
+  board.height = Math.round(cssW*dpr);
+  bctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function resetGame(){
+  snake = [{x:8,y:10},{x:9,y:10},{x:10,y:10}];
+  dir = {x:1,y:0}; nextDir = dir;
+  score=0; prevScore=0; speed=START_SPEED;
+  food = randFood();
+  $('scoreVal').textContent='0';
+  $('highVal').textContent=high;
+}
+function randFood(){
+  while(true){
+    const f={x:Math.floor(Math.random()*CELLS), y:Math.floor(Math.random()*CELLS)};
+    if(!snake.some(s=>s.x===f.x&&s.y===f.y)) return f;
   }
-
-  function startGame(){
-    fitCanvas(); resetGame(); draw();
-    $('overTitle').textContent='Ready?';
-    $('overMsg').textContent='Tap Start to play';
-    $('btnStart').textContent='Start';
-    $('overlay').classList.add('on');
-    running=false; paused=false;
+}
+function draw(){
+  const size = board.clientWidth;
+  const cell = size/CELLS;
+  bctx.clearRect(0,0,size,size);
+  bctx.fillStyle='#050810'; bctx.fillRect(0,0,size,size);
+  bctx.fillStyle='#f472b6'; bctx.shadowColor='#f472b6'; bctx.shadowBlur=12;
+  bctx.fillRect(food.x*cell+2, food.y*cell+2, cell-4, cell-4);
+  bctx.shadowBlur=0;
+  const sk = getSkin(skinId);
+  snake.forEach((seg,i)=>{
+    const isHead = i===snake.length-1;
+    if(isHead){ bctx.fillStyle=sk.head; bctx.shadowColor=sk.glow; bctx.shadowBlur=14; }
+    else { bctx.fillStyle=`rgba(${sk.body},${0.35+i/snake.length*0.6})`; bctx.shadowBlur=0; }
+    bctx.fillRect(seg.x*cell+1, seg.y*cell+1, cell-2, cell-2);
+  });
+  bctx.shadowBlur=0;
+}
+function step(){
+  dir = nextDir;
+  const head = snake[snake.length-1];
+  const nh = {x:head.x+dir.x, y:head.y+dir.y};
+  if (
+  nh.x < 0 ||
+  nh.y < 0 ||
+  nh.x >= CELLS ||
+  nh.y >= CELLS ||
+  snake.some(s => s.x === nh.x && s.y === nh.y)
+) {
+  gameOver();
+  return;
   }
-  function stopGame(){ clearTimeout(timer); running=false; }
+  }
+  snake.push(nh);
+  if(nh.x===food.x&&nh.y===food.y){
+    prevScore=score; score+=10;
+    const earned = Math.floor(score/100)-Math.floor(prevScore/100);
+    if(earned>0){ gems+=earned; updateGems(); flash(`+${earned} 💎`); save(); }
+    $('scoreVal').textContent=score;
+    food=randFood();
+    speed=Math.max(MIN_SPEED, speed-DEC);
+  } else {
+    snake.shift();
+  }
+  draw();
+  timer=setTimeout(step, speed);
+}
+function gameOver(){
+  running=false; clearTimeout(timer);
+  if(score>high){ high=score; save(); $('highVal').textContent=high; }
+  $('overTitle').textContent='Game Over';
+  $('overMsg').textContent=`Score ${score} · Best ${high}`;
+  $('btnStart').textContent='Play Again';
+  $('overlay').classList.add('on');
+}
+function startGame(){
+  fitCanvas(); resetGame(); draw();
+  $('overTitle').textContent='Ready?';
+  $('overMsg').textContent='Tap Start to play';
+  $('btnStart').textContent='Start';
+  $('overlay').classList.add('on');
+  running=false; paused=false;
+}
+function stopGame(){ clearTimeout(timer); running=false; }
 
-  $('btnStart').onclick = ()=>{
-    if(!running){
-      if($('overTitle').textContent==='Game Over') resetGame();
-      running=true; paused=false;
-      $('overlay').classList.remove('on');
-      clearTimeout(timer); timer=setTimeout(step, speed);
+$('btnStart').onclick = ()=>{
+  if(!running){
+    if($('overTitle').textContent==='Game Over') resetGame();
+    running=true; paused=false;
+    $('overlay').classList.remove('on');
+    clearTimeout(timer); timer=setTimeout(step, speed);
+  }
+};
+$('btnPause').onclick = ()=>{
+  if(!running) return;
+  paused=true; clearTimeout(timer);
+  $('overTitle').textContent='Paused';
+  $('overMsg').textContent='Tap Resume to continue';
+  $('btnStart').textContent='Resume';
+  $('overlay').classList.add('on');
+  running=false;
+};
+$('btnRestart').onclick = ()=>{ stopGame(); startGame(); };
+
+function turn(d){
+  const map={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+  const n=map[d]; if(!n) return;
+  if(n.x===-dir.x && n.y===-dir.y) return;
+  nextDir=n;
+}
+document.querySelectorAll('.dbtn[data-dir]').forEach(b=>{
+  b.addEventListener('click', ()=>turn(b.dataset.dir));
+});
+document.addEventListener('keydown', e=>{
+  const k=e.key.toLowerCase();
+  if(k==='arrowup'||k==='w') turn('up');
+  else if(k==='arrowdown'||k==='s') turn('down');
+  else if(k==='arrowleft'||k==='a') turn('left');
+  else if(k==='arrowright'||k==='d') turn('right');
+  else if(k===' ') $('btnPause').click();
+});
+let sx=0,sy=0;
+board.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+board.addEventListener('touchend', e=>{
+  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)<20&&Math.abs(dy)<20) return;
+  if(Math.abs(dx)>Math.abs(dy)) turn(dx>0?'right':'left');
+  else turn(dy>0?'down':'up');
+}, {passive:true});
+
+let ssx=0,ssy=0;
+const appEl = document.getElementById('app');
+appEl.addEventListener('touchstart', e=>{
+  if(views.game.classList.contains('active')) return;
+  ssx=e.touches[0].clientX; ssy=e.touches[0].clientY;
+}, {passive:true});
+appEl.addEventListener('touchend', e=>{
+  if(views.game.classList.contains('active')) return;
+  const dx=e.changedTouches[0].clientX-ssx, dy=e.changedTouches[0].clientY-ssy;
+  if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)) return;
+  if(dx<0 && views.home.classList.contains('active')) showView('skins');
+  else if(dx>0 && views.skins.classList.contains('active')) showView('home');
+}, {passive:true});
+
+window.addEventListener('resize', ()=>{ if(views.game.classList.contains('active')){ fitCanvas(); draw(); } });
+
+/* -------------------- AUTH -------------------- */
+const authModal = $('authModal');
+const authErr   = $('authErr');
+const inUser    = $('inUsername');
+const inPass    = $('inPassword');
+const hUser     = $('hUsername');
+const fUser     = $('fUsername');
+const btnSubmit = $('btnAuthSubmit');
+const btnSkip   = $('btnAuthSkip');
+const usernameToEmail = (u) => `${u.toLowerCase()}@neon.local`;
+let authMode = 'signup';
+
+function setMode(m){
+  authMode = m;
+  document.querySelectorAll('.seg').forEach(s=>s.classList.toggle('active', s.dataset.mode===m));
+  if(m==='signup'){
+    $('authTitle').textContent='Create Your Account';
+    $('authSub').textContent='Sign up to save your progress across devices.';
+    fUser.style.display='';
+    inPass.autocomplete='new-password';
+    btnSubmit.textContent='Create Account';
+  } else {
+    $('authTitle').textContent='Welcome Back';
+    $('authSub').textContent='Sign in to load your gems, high score, and skins.';
+    fUser.style.display='';
+    inPass.autocomplete='current-password';
+    btnSubmit.textContent='Sign In';
+  }
+  authErr.classList.remove('on'); hUser.textContent=''; hUser.className='hintMsg';
+}
+document.querySelectorAll('.seg').forEach(s=>s.addEventListener('click', ()=>setMode(s.dataset.mode)));
+
+function openAuth(mode='signup'){ setMode(mode); authModal.classList.add('on'); }
+function closeAuth(){ authModal.classList.remove('on'); localStorage.setItem(K_SEEN,'1'); }
+btnSkip.onclick = closeAuth;
+userBtn.onclick = async ()=>{
+  if(currentUser){
+    if(confirm('Sign out?')){
+      await sb.auth.signOut();
+      currentUser=null; currentUsername=null;
+      updateUserBtn();
+      flash('Signed out');
     }
-  };
-  $('btnPause').onclick = ()=>{
-    if(!running) return;
-    paused=true; clearTimeout(timer);
-    $('overTitle').textContent='Paused';
-    $('overMsg').textContent='Tap Resume to continue';
-    $('btnStart').textContent='Resume';
-    $('overlay').classList.add('on');
-    running=false;
-  };
-  $('btnRestart').onclick = ()=>{ stopGame(); startGame(); };
+  } else openAuth('signin');
+};
 
-  function turn(d){
-    const map={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
-    const n=map[d]; if(!n) return;
-    if(n.x===-dir.x && n.y===-dir.y) return;
-    nextDir=n;
+// Username availability check (debounced)
+let uTimer=null;
+inUser.addEventListener('input', ()=>{
+  const v = inUser.value.trim();
+  hUser.textContent=''; hUser.className='hintMsg';
+  clearTimeout(uTimer);
+  if(!v) return;
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(v)){
+    hUser.textContent='3–20 letters, numbers, or _'; hUser.className='hintMsg err'; return;
   }
-  document.querySelectorAll('.dbtn[data-dir]').forEach(b=>{
-    b.addEventListener('click', ()=>turn(b.dataset.dir));
-  });
-  document.addEventListener('keydown', e=>{
-    const k=e.key.toLowerCase();
-    if(k==='arrowup'||k==='w') turn('up');
-    else if(k==='arrowdown'||k==='s') turn('down');
-    else if(k==='arrowleft'||k==='a') turn('left');
-    else if(k==='arrowright'||k==='d') turn('right');
-    else if(k===' ') $('btnPause').click();
-  });
-  let sx=0,sy=0;
-  board.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
-  board.addEventListener('touchend', e=>{
-    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<20&&Math.abs(dy)<20) return;
-    if(Math.abs(dx)>Math.abs(dy)) turn(dx>0?'right':'left');
-    else turn(dy>0?'down':'up');
-  }, {passive:true});
+  if(authMode!=='signup') return;
+  hUser.textContent='Checking…';
+  uTimer=setTimeout(async ()=>{
+    const { data, error } = await sb.rpc('username_available', { name: v });
+    if(error){ hUser.textContent=''; return; }
+    if(data){ hUser.textContent='✓ Available'; hUser.className='hintMsg ok'; }
+    else    { hUser.textContent='✗ Taken';     hUser.className='hintMsg err'; }
+  }, 350);
+});
 
-  let ssx=0,ssy=0;
-  const appEl = document.getElementById('app');
-  appEl.addEventListener('touchstart', e=>{
-    if(views.game.classList.contains('active')) return;
-    ssx=e.touches[0].clientX; ssy=e.touches[0].clientY;
-  }, {passive:true});
-  appEl.addEventListener('touchend', e=>{
-    if(views.game.classList.contains('active')) return;
-    const dx=e.changedTouches[0].clientX-ssx, dy=e.changedTouches[0].clientY-ssy;
-    if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)) return;
-    if(dx<0 && views.home.classList.contains('active')) showView('skins');
-    else if(dx>0 && views.skins.classList.contains('active')) showView('home');
-  }, {passive:true});
+btnSubmit.onclick = async ()=>{
+  authErr.classList.remove('on');
+  const uname = inUser.value.trim();
+  const pass  = inPass.value;
+  if(!uname || !pass){ showErr('Enter username and password.'); return; }
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){ showErr('Username must be 3–20 letters, numbers, or _.'); return; }
 
-  window.addEventListener('resize', ()=>{ if(views.game.classList.contains('active')){ fitCanvas(); draw(); } });
+  btnSubmit.disabled = true;
+  try {
+    const email = usernameToEmail(uname);
+    if(authMode==='signup'){
+      if(pass.length < 6){ showErr('Password must be at least 6 characters.'); return; }
+      const { data: avail, error: aerr } = await sb.rpc('username_available', { name: uname });
+      if(aerr){ showErr(aerr.message); return; }
+      if(!avail){ showErr('That username is taken. Pick another.'); return; }
 
+      const { data, error } = await sb.auth.signUp({
+        email, password: pass,
+        options: { data: { username: uname } }
+      });
+      if(error){ showErr(error.message); return; }
+      if(!data.session){
+        const si = await sb.auth.signInWithPassword({ email, password: pass });
+        if(si.error){ showErr(si.error.message); return; }
+        await onSignedIn(si.data.user);
+      } else {
+        await onSignedIn(data.user);
+      }
+      flash(`Welcome, @${uname}!`);
+      closeAuth();
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if(error){ showErr('Wrong username or password.'); return; }
+      await onSignedIn(data.user);
+      flash(`Welcome back, @${currentUsername||uname}`);
+      closeAuth();
+    }
+  } finally {
+    btnSubmit.disabled = false;
+  }
+};
+function showErr(m){ authErr.textContent=m; authErr.classList.add('on'); btnSubmit.disabled=false; }
+
+async function onSignedIn(user){
+  currentUser = user;
+  let { data: prof, error } = await sb.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
+  if(error) console.error(error);
+  if(!prof){
+    const uname = user.user_metadata?.username;
+    if(uname){
+      const ins = await sb.from('profiles').insert({ user_id: user.id, username: uname }).select().single();
+      if(!ins.error) prof = ins.data;
+    }
+  }
+  if(prof){
+    currentUsername = prof.username;
+    gems = prof.gems;
+    high = prof.high_score;
+    unlocked = Array.isArray(prof.unlocked_skins) ? prof.unlocked_skins.slice() : ['neon-cyan'];
+    if(!unlocked.includes(DEFAULT)) unlocked.push(DEFAULT);
+    skinId = prof.current_skin || DEFAULT;
+    saveLocal();
+    updateGems();
+    $('highVal').textContent = high;
+    updateUserBtn();
+    if(views.home.classList.contains('active')) drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
+    if(views.skins.classList.contains('active')) renderSkins();
+  }
+}
+
+// Boot
+(async ()=>{
   updateGems();
   showView('home');
+  const { data: { session } } = await sb.auth.getSession();
+  if(session?.user){
+    await onSignedIn(session.user);
+  } else if(!localStorage.getItem(K_SEEN)){
+    setTimeout(()=>openAuth('signup'), 400);
+  }
+  updateUserBtn();
 })();
+
+sb.auth.onAuthStateChange(async (event, session)=>{
+  if(event==='SIGNED_IN' && session?.user && !currentUser){
+    await onSignedIn(session.user);
+  } else if(event==='SIGNED_OUT'){
+    currentUser=null; currentUsername=null; updateUserBtn();
+  }
+});
 </script>
 </body>
 </html>
