@@ -28,6 +28,15 @@
   .userBtn{background:rgba(15,20,32,.6);border:1px solid var(--border);color:var(--fg);
     padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;
     max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .floatAdmin{position:fixed;right:16px;bottom:24px;z-index:50;display:none;
+    padding:14px 20px;border-radius:99px;border:0;cursor:pointer;
+    font-weight:900;font-size:15px;letter-spacing:.04em;color:#1a1200;
+    background:linear-gradient(135deg,#fbbf24,#f59e0b);
+    box-shadow:0 8px 26px -6px rgba(245,158,11,.7),0 0 0 3px rgba(0,0,0,.4);
+    display:none;align-items:center;gap:8px}
+  .floatAdmin.on{display:inline-flex}
+  .floatAdmin:active{transform:scale(.96)}
+
   .view{flex:1;min-height:0;display:none;flex-direction:column}
   .view.active{display:flex}
   h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;
@@ -128,6 +137,8 @@
 </style>
 </head>
 <body>
+<button class="floatAdmin" id="adminBtn" aria-label="Admin Panel"><span style="font-size:20px">👑</span><span>Admin</span></button>
+
 <div class="app" id="app">
   <div class="topbar">
     <button class="userBtn" id="userBtn">Sign In</button>
@@ -137,6 +148,7 @@
     </div>
     <div class="gems"><span>💎</span><span id="gemCount">0</span></div>
   </div>
+
   <div class="flash" id="flash"></div>
 
   <section class="view home active" id="view-home">
@@ -218,6 +230,43 @@
   </div>
 </div>
 
+<!-- Admin Panel Modal -->
+<div class="modalBg" id="adminModal">
+  <div class="modal">
+    <h2>👑 Admin Panel</h2>
+    <p class="mSub">Manage any account. Username is case-insensitive.</p>
+    <div class="errBox" id="adminMsg"></div>
+    <div class="field">
+      <label>Target Username</label>
+      <input id="adTarget" type="text" maxlength="20" placeholder="e.g. eric" />
+    </div>
+    <div class="field">
+      <label>Set Gems (exact amount)</label>
+      <div style="display:flex;gap:6px">
+        <input id="adGems" type="number" min="0" placeholder="999999" style="flex:1" />
+        <button class="btn primary" id="adSetGems" style="width:auto;padding:0 14px">Set</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Grant Skin</label>
+      <div style="display:flex;gap:6px">
+        <select id="adSkin" style="flex:1;background:rgba(15,20,32,.9);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:10px"></select>
+        <button class="btn primary" id="adGrantSkin" style="width:auto;padding:0 14px">Grant</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Ban / Unban</label>
+      <div style="display:flex;gap:6px">
+        <button class="btn" id="adBan" style="flex:1;background:rgba(244,63,94,.2);border:1px solid rgba(244,63,94,.5);color:#fca5a5">🚫 Ban</button>
+        <button class="btn" id="adUnban" style="flex:1;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.4);color:#86efac">✓ Unban</button>
+      </div>
+    </div>
+    <div class="modalFoot">
+      <button class="linkBtn" id="btnAdminClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -254,6 +303,7 @@ let high = parseInt(localStorage.getItem(K_HIGH)||'0',10)||0;
 
 let currentUser = null;
 let currentUsername = null;
+let isAdmin = false;
 let saveTimer = null;
 
 const saveLocal = () => {
@@ -411,7 +461,7 @@ function step(){
   dir = nextDir;
   const head = snake[snake.length-1];
   const nh = {x:head.x+dir.x, y:head.y+dir.y};
-    if(nh.x<0||nh.y<0||nh.x>=CELLS||nh.y>=CELLS||snake.some(s=>s.x===nh.x&&s.y===nh.y)){
+  if(nh.x<0||nh.y<0||nh.x>=CELLS||nh.y>=CELLS||snake.some(s=>s.x===nh.x&&s.y===nh.y)){
     gameOver(); return;
   }
   snake.push(nh);
@@ -553,7 +603,6 @@ userBtn.onclick = async ()=>{
   } else openAuth('signin');
 };
 
-// Username availability check (debounced)
 let uTimer=null;
 inUser.addEventListener('input', ()=>{
   const v = inUser.value.trim();
@@ -628,6 +677,13 @@ async function onSignedIn(user){
     }
   }
   if(prof){
+    if(prof.banned){
+      alert('This account has been banned.');
+      await sb.auth.signOut();
+      currentUser=null; currentUsername=null; isAdmin=false;
+      updateUserBtn(); updateAdminBtn();
+      return;
+    }
     currentUsername = prof.username;
     gems = prof.gems;
     high = prof.high_score;
@@ -641,9 +697,63 @@ async function onSignedIn(user){
     if(views.home.classList.contains('active')) drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
     if(views.skins.classList.contains('active')) renderSkins();
   }
+  // Check admin role
+  const { data: roles } = await sb.from('user_roles').select('role').eq('user_id', user.id);
+  isAdmin = Array.isArray(roles) && roles.some(r=>r.role==='admin');
+  updateAdminBtn();
 }
 
-// Boot
+function updateAdminBtn(){
+  const b = $('adminBtn');
+  if(b) b.classList.toggle('on', !!isAdmin);
+}
+
+/* -------------------- ADMIN PANEL -------------------- */
+const adminModal = $('adminModal');
+const adminMsg = $('adminMsg');
+function adMsg(txt, ok=false){
+  adminMsg.textContent = txt;
+  adminMsg.style.background = ok ? 'rgba(74,222,128,.12)' : 'rgba(244,63,94,.12)';
+  adminMsg.style.borderColor = ok ? 'rgba(74,222,128,.35)' : 'rgba(244,63,94,.35)';
+  adminMsg.style.color = ok ? '#86efac' : '#fca5a5';
+  adminMsg.classList.add('on');
+}
+(function(){
+  const sel = $('adSkin');
+  SKINS.forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    sel.appendChild(o);
+  });
+})();
+$('adminBtn').onclick = ()=>{
+  if(!isAdmin) return;
+  adminMsg.classList.remove('on');
+  adminModal.classList.add('on');
+};
+$('btnAdminClose').onclick = ()=> adminModal.classList.remove('on');
+async function runAdmin(fn, args, okMsg){
+  const target = $('adTarget').value.trim();
+  if(!target){ adMsg('Enter a target username.'); return; }
+  const { error } = await sb.rpc(fn, { target_username: target, ...args });
+  if(error){ adMsg(error.message || 'Failed.'); return; }
+  adMsg(okMsg, true);
+  if(currentUsername && target.toLowerCase() === currentUsername.toLowerCase() && currentUser){
+    await onSignedIn(currentUser);
+  }
+}
+$('adSetGems').onclick = ()=>{
+  const n = parseInt($('adGems').value,10);
+  if(isNaN(n) || n<0){ adMsg('Enter a valid gem amount.'); return; }
+  runAdmin('admin_set_gems', { new_gems: n }, `Set gems to ${n}.`);
+};
+$('adGrantSkin').onclick = ()=>{
+  runAdmin('admin_grant_skin', { skin: $('adSkin').value }, `Granted skin.`);
+};
+$('adBan').onclick = ()=> runAdmin('admin_set_banned', { is_banned: true }, 'User banned.');
+$('adUnban').onclick = ()=> runAdmin('admin_set_banned', { is_banned: false }, 'User unbanned.');
+
+/* -------------------- BOOT -------------------- */
 (async ()=>{
   updateGems();
   showView('home');
@@ -660,9 +770,11 @@ sb.auth.onAuthStateChange(async (event, session)=>{
   if(event==='SIGNED_IN' && session?.user && !currentUser){
     await onSignedIn(session.user);
   } else if(event==='SIGNED_OUT'){
-    currentUser=null; currentUsername=null; updateUserBtn();
+    currentUser=null; currentUsername=null; isAdmin=false;
+    updateUserBtn(); updateAdminBtn();
   }
 });
 </script>
 </body>
 </html>
+
