@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +18,7 @@
   body{display:flex;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 30%,#12203a 0%,#07090f 60%)}
   .app{width:100%;max-width:440px;height:100svh;display:flex;flex-direction:column;
-    padding:10px 14px;position:relative}
+    padding:10px 14px 76px;position:relative}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px}
   .tabs{display:flex;gap:6px}
   .tab{width:18px;height:6px;border-radius:99px;background:#2a3350;border:0;cursor:pointer;padding:0;transition:all .2s}
@@ -28,12 +29,21 @@
   .userBtn{background:rgba(15,20,32,.6);border:1px solid var(--border);color:var(--fg);
     padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;
     max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .floatAdmin{position:fixed;right:16px;bottom:24px;z-index:50;display:none;
-    padding:14px 20px;border-radius:99px;border:0;cursor:pointer;
-    font-weight:900;font-size:15px;letter-spacing:.04em;color:#1a1200;
+
+  /* Bottom nav */
+  .bottomNav{position:fixed;right:14px;bottom:14px;z-index:40;display:flex;gap:6px;
+    background:rgba(15,20,32,.85);border:1px solid var(--border);border-radius:99px;
+    padding:5px;backdrop-filter:blur(8px);box-shadow:0 8px 24px -8px rgba(0,0,0,.6)}
+  .navBtn{background:transparent;border:0;color:var(--muted);padding:8px 14px;border-radius:99px;
+    font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .navBtn.active{background:rgba(34,211,238,.15);color:var(--primary)}
+
+  .floatAdmin{position:fixed;left:14px;bottom:14px;z-index:50;
+    padding:10px 16px;border-radius:99px;border:0;cursor:pointer;
+    font-weight:900;font-size:13px;letter-spacing:.04em;color:#1a1200;
     background:linear-gradient(135deg,#fbbf24,#f59e0b);
-    box-shadow:0 8px 26px -6px rgba(245,158,11,.7),0 0 0 3px rgba(0,0,0,.4);
-    display:none;align-items:center;gap:8px}
+    box-shadow:0 8px 26px -6px rgba(245,158,11,.7),0 0 0 2px rgba(0,0,0,.4);
+    display:none;align-items:center;gap:6px}
   .floatAdmin.on{display:inline-flex}
   .floatAdmin:active{transform:scale(.96)}
 
@@ -106,7 +116,34 @@
     opacity:0;transition:opacity .2s;pointer-events:none}
   .flash.on{opacity:1}
 
-  /* Auth modal */
+  /* Leaderboard */
+  .lbHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .lbHead h2{margin:0;font-size:18px}
+  .lbTabs{display:flex;background:rgba(15,20,32,.6);border:1px solid var(--border);
+    border-radius:10px;padding:3px;margin-bottom:10px}
+  .lbTab{flex:1;background:transparent;border:0;color:var(--muted);padding:9px;
+    font-weight:800;font-size:12px;border-radius:8px;cursor:pointer;letter-spacing:.05em}
+  .lbTab.active{background:rgba(34,211,238,.15);color:var(--primary)}
+  .lbMeta{display:flex;justify-content:space-between;align-items:center;font-size:10px;
+    color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
+  .lbLive{display:inline-flex;align-items:center;gap:5px}
+  .lbDot{width:6px;height:6px;border-radius:99px;background:#4ade80;box-shadow:0 0 8px #4ade80;
+    animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .lbList{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:2px}
+  .lbRow{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(15,20,32,.5);
+    border:1px solid var(--border);border-radius:10px;font-size:13px}
+  .lbRow.me{border-color:var(--primary);background:rgba(34,211,238,.08)}
+  .lbRank{width:28px;font-weight:900;color:var(--muted);font-variant-numeric:tabular-nums;text-align:center}
+  .lbRow.top1 .lbRank{color:#facc15}
+  .lbRow.top2 .lbRank{color:#e5e7eb}
+  .lbRow.top3 .lbRank{color:#fb923c}
+  .lbName{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbVal{font-weight:900;font-variant-numeric:tabular-nums;color:var(--fg)}
+  .lbVal .em{color:var(--gem)}
+  .lbEmpty{text-align:center;color:var(--muted);padding:30px 10px;font-size:12px}
+
+  /* Modals */
   .modalBg{position:fixed;inset:0;background:rgba(3,5,10,.82);backdrop-filter:blur(6px);
     display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
   .modalBg.on{display:flex}
@@ -123,9 +160,9 @@
   .seg.active{background:rgba(34,211,238,.15);color:var(--primary)}
   .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
   .field label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700}
-  .field input{background:rgba(7,9,15,.6);border:1px solid var(--border);color:var(--fg);
+  .field input,.field select{background:rgba(7,9,15,.6);border:1px solid var(--border);color:var(--fg);
     padding:11px 12px;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
-  .field input:focus{border-color:var(--primary)}
+  .field input:focus,.field select:focus{border-color:var(--primary)}
   .field .hintMsg{font-size:10px;color:var(--muted);min-height:12px}
   .field .hintMsg.ok{color:#4ade80}
   .field .hintMsg.err{color:#f87171}
@@ -137,7 +174,12 @@
 </style>
 </head>
 <body>
-<button class="floatAdmin" id="adminBtn" aria-label="Admin Panel"><span style="font-size:20px">👑</span><span>Admin</span></button>
+<button class="floatAdmin" id="adminBtn" aria-label="Admin Panel"><span style="font-size:16px">👑</span><span id="adminBtnLabel">Admin</span></button>
+
+<div class="bottomNav">
+  <button class="navBtn active" data-nav="home" id="navHome">🏠 Home</button>
+  <button class="navBtn" data-nav="leaderboard" id="navLb">🏆 Leaderboard</button>
+</div>
 
 <div class="app" id="app">
   <div class="topbar">
@@ -202,6 +244,22 @@
       <button class="btn ghost" id="btnRestart" style="width:auto;padding:8px 18px">Restart</button>
     </div>
   </section>
+
+  <section class="view" id="view-leaderboard">
+    <div class="lbHead">
+      <h2>🏆 Leaderboard</h2>
+      <div class="lbLive"><span class="lbDot"></span><span style="font-size:10px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase">Live</span></div>
+    </div>
+    <div class="lbTabs">
+      <button class="lbTab active" data-lb="gems">💎 Most Gems · Top 100</button>
+      <button class="lbTab" data-lb="score">🐍 Highest Score · Top 10</button>
+    </div>
+    <div class="lbMeta">
+      <span id="lbCount">—</span>
+      <span id="lbUpdated">Updating…</span>
+    </div>
+    <div class="lbList" id="lbList"></div>
+  </section>
 </div>
 
 <!-- Auth Modal -->
@@ -230,7 +288,7 @@
   </div>
 </div>
 
-<!-- Admin Panel Modal -->
+<!-- Admin Panel Modal (full) -->
 <div class="modalBg" id="adminModal">
   <div class="modal">
     <h2>👑 Admin Panel</h2>
@@ -250,7 +308,7 @@
     <div class="field">
       <label>Grant Skin</label>
       <div style="display:flex;gap:6px">
-        <select id="adSkin" style="flex:1;background:rgba(15,20,32,.9);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:10px"></select>
+        <select id="adSkin" style="flex:1"></select>
         <button class="btn primary" id="adGrantSkin" style="width:auto;padding:0 14px">Grant</button>
       </div>
     </div>
@@ -263,6 +321,25 @@
     </div>
     <div class="modalFoot">
       <button class="linkBtn" id="btnAdminClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rappy Fake Admin Panel (skins only, local-only) -->
+<div class="modalBg" id="rappyModal">
+  <div class="modal">
+    <h2>👑 Admin Panel</h2>
+    <p class="mSub">Welcome, @rappy. Grant yourself any skin.</p>
+    <div class="errBox" id="rappyMsg"></div>
+    <div class="field">
+      <label>Grant Skin</label>
+      <div style="display:flex;gap:6px">
+        <select id="rappySkin" style="flex:1"></select>
+        <button class="btn primary" id="rappyGrant" style="width:auto;padding:0 14px">Grant</button>
+      </div>
+    </div>
+    <div class="modalFoot">
+      <button class="linkBtn" id="btnRappyClose">Close</button>
     </div>
   </div>
 </div>
@@ -304,6 +381,7 @@ let high = parseInt(localStorage.getItem(K_HIGH)||'0',10)||0;
 let currentUser = null;
 let currentUsername = null;
 let isAdmin = false;
+let isRappy = false;
 let saveTimer = null;
 
 const saveLocal = () => {
@@ -325,28 +403,31 @@ const save = () => {
 };
 
 const $ = id => document.getElementById(id);
-const views = { home:$('view-home'), skins:$('view-skins'), game:$('view-game') };
+const views = { home:$('view-home'), skins:$('view-skins'), game:$('view-game'), leaderboard:$('view-leaderboard') };
 const tabs  = document.querySelectorAll('.tab');
 const gemCount = $('gemCount');
 const flashEl  = $('flash');
 const userBtn  = $('userBtn');
 
 function updateGems(){ gemCount.textContent = gems; }
-function updateUserBtn(){
-  userBtn.textContent = currentUsername ? '@'+currentUsername : 'Sign In';
-}
+function updateUserBtn(){ userBtn.textContent = currentUsername ? '@'+currentUsername : 'Sign In'; }
 function flash(msg){
   flashEl.textContent = msg; flashEl.classList.add('on');
   clearTimeout(flash._t);
   flash._t = setTimeout(()=>flashEl.classList.remove('on'), 1600);
 }
 
+let lbPollTimer = null;
 function showView(name){
   Object.entries(views).forEach(([k,el])=>el.classList.toggle('active', k===name));
   tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  // bottom nav sync
+  $('navHome').classList.toggle('active', name!=='leaderboard');
+  $('navLb').classList.toggle('active', name==='leaderboard');
   if(name==='home') drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
   if(name==='skins') renderSkins();
   if(name==='game') startGame(); else stopGame();
+  if(name==='leaderboard'){ loadLeaderboard(); startLbPolling(); } else { stopLbPolling(); }
 }
 
 tabs.forEach(t=>t.addEventListener('click', ()=>{
@@ -357,6 +438,8 @@ $('btnPlay2').onclick    = ()=>showView('game');
 $('btnGoSkins').onclick  = ()=>showView('skins');
 $('btnBackHome').onclick = ()=>showView('home');
 $('btnQuit').onclick     = ()=>showView('home');
+$('navHome').onclick     = ()=>showView('home');
+$('navLb').onclick       = ()=>showView('leaderboard');
 
 function drawPreview(ctx, skin, size){
   const cells=5, cell=size/cells;
@@ -413,6 +496,7 @@ function selectSkin(id){
   skinId=id; save(); renderSkins();
 }
 
+/* -------------------- GAME -------------------- */
 const board = $('board');
 const bctx  = board.getContext('2d');
 const CELLS = 20;
@@ -557,6 +641,66 @@ appEl.addEventListener('touchend', e=>{
 
 window.addEventListener('resize', ()=>{ if(views.game.classList.contains('active')){ fitCanvas(); draw(); } });
 
+/* -------------------- LEADERBOARD -------------------- */
+let lbMode = 'gems'; // 'gems' | 'score'
+document.querySelectorAll('.lbTab').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    lbMode = b.dataset.lb;
+    document.querySelectorAll('.lbTab').forEach(x=>x.classList.toggle('active', x===b));
+    loadLeaderboard();
+  });
+});
+
+function fmtTime(){
+  const d = new Date();
+  return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+async function loadLeaderboard(){
+  const list = $('lbList');
+  const isGems = lbMode==='gems';
+  const limit = isGems ? 100 : 10;
+  const col   = isGems ? 'gems' : 'high_score';
+  $('lbCount').textContent = isGems ? 'Top 100 · Most Gems' : 'Top 10 · Highest Score';
+  const { data, error } = await sb
+    .from('profiles')
+    .select('username, gems, high_score, banned')
+    .eq('banned', false)
+    .order(col, { ascending:false })
+    .limit(limit);
+  $('lbUpdated').textContent = 'Updated ' + fmtTime();
+  if(error){
+    list.innerHTML = `<div class="lbEmpty">Couldn't load leaderboard.</div>`;
+    return;
+  }
+  const rows = (data||[]).filter(r=>r.username);
+  if(!rows.length){
+    list.innerHTML = `<div class="lbEmpty">No players yet. Be the first!</div>`;
+    return;
+  }
+  list.innerHTML = rows.map((r,i)=>{
+    const rank = i+1;
+    const me = currentUsername && r.username.toLowerCase()===currentUsername.toLowerCase();
+    const cls = ['lbRow', me?'me':'', rank===1?'top1':rank===2?'top2':rank===3?'top3':''].filter(Boolean).join(' ');
+    const val = isGems
+      ? `<span class="em">💎</span> ${r.gems ?? 0}`
+      : `${r.high_score ?? 0}`;
+    return `<div class="${cls}">
+      <div class="lbRank">${rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'#'+rank}</div>
+      <div class="lbName">@${r.username}${me?' <span style="color:var(--primary);font-size:10px;letter-spacing:.15em">· YOU</span>':''}</div>
+      <div class="lbVal">${val}</div>
+    </div>`;
+  }).join('');
+}
+
+function startLbPolling(){
+  stopLbPolling();
+  lbPollTimer = setInterval(loadLeaderboard, 5000); // live scan
+}
+function stopLbPolling(){
+  if(lbPollTimer){ clearInterval(lbPollTimer); lbPollTimer = null; }
+}
+
 /* -------------------- AUTH -------------------- */
 const authModal = $('authModal');
 const authErr   = $('authErr');
@@ -596,8 +740,8 @@ userBtn.onclick = async ()=>{
   if(currentUser){
     if(confirm('Sign out?')){
       await sb.auth.signOut();
-      currentUser=null; currentUsername=null;
-      updateUserBtn();
+      currentUser=null; currentUsername=null; isAdmin=false; isRappy=false;
+      updateUserBtn(); updateAdminBtn();
       flash('Signed out');
     }
   } else openAuth('signin');
@@ -680,7 +824,7 @@ async function onSignedIn(user){
     if(prof.banned){
       alert('This account has been banned.');
       await sb.auth.signOut();
-      currentUser=null; currentUsername=null; isAdmin=false;
+      currentUser=null; currentUsername=null; isAdmin=false; isRappy=false;
       updateUserBtn(); updateAdminBtn();
       return;
     }
@@ -696,19 +840,32 @@ async function onSignedIn(user){
     updateUserBtn();
     if(views.home.classList.contains('active')) drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
     if(views.skins.classList.contains('active')) renderSkins();
+    if(views.leaderboard.classList.contains('active')) loadLeaderboard();
   }
-  // Check admin role
+  // Real admin role from DB
   const { data: roles } = await sb.from('user_roles').select('role').eq('user_id', user.id);
   isAdmin = Array.isArray(roles) && roles.some(r=>r.role==='admin');
+  // Fake admin: @rappy — client-only cosmetic panel
+  isRappy = !isAdmin && currentUsername && currentUsername.toLowerCase()==='rappy';
   updateAdminBtn();
 }
 
 function updateAdminBtn(){
   const b = $('adminBtn');
-  if(b) b.classList.toggle('on', !!isAdmin);
+  const label = $('adminBtnLabel');
+  if(!b) return;
+  if(isAdmin){
+    b.classList.add('on'); label.textContent = 'Admin';
+    b.onclick = ()=>{ $('adminMsg').classList.remove('on'); $('adminModal').classList.add('on'); };
+  } else if(isRappy){
+    b.classList.add('on'); label.textContent = 'Admin';
+    b.onclick = ()=>{ $('rappyMsg').classList.remove('on'); $('rappyModal').classList.add('on'); };
+  } else {
+    b.classList.remove('on'); b.onclick = null;
+  }
 }
 
-/* -------------------- ADMIN PANEL -------------------- */
+/* -------------------- REAL ADMIN PANEL -------------------- */
 const adminModal = $('adminModal');
 const adminMsg = $('adminMsg');
 function adMsg(txt, ok=false){
@@ -725,12 +882,13 @@ function adMsg(txt, ok=false){
     o.value = s.id; o.textContent = s.name;
     sel.appendChild(o);
   });
+  const sel2 = $('rappySkin');
+  SKINS.forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    sel2.appendChild(o);
+  });
 })();
-$('adminBtn').onclick = ()=>{
-  if(!isAdmin) return;
-  adminMsg.classList.remove('on');
-  adminModal.classList.add('on');
-};
 $('btnAdminClose').onclick = ()=> adminModal.classList.remove('on');
 async function runAdmin(fn, args, okMsg){
   const target = $('adTarget').value.trim();
@@ -753,6 +911,30 @@ $('adGrantSkin').onclick = ()=>{
 $('adBan').onclick = ()=> runAdmin('admin_set_banned', { is_banned: true }, 'User banned.');
 $('adUnban').onclick = ()=> runAdmin('admin_set_banned', { is_banned: false }, 'User unbanned.');
 
+/* -------------------- RAPPY FAKE ADMIN -------------------- */
+const rappyModal = $('rappyModal');
+const rappyMsg = $('rappyMsg');
+function rpMsg(txt, ok=false){
+  rappyMsg.textContent = txt;
+  rappyMsg.style.background = ok ? 'rgba(74,222,128,.12)' : 'rgba(244,63,94,.12)';
+  rappyMsg.style.borderColor = ok ? 'rgba(74,222,128,.35)' : 'rgba(244,63,94,.35)';
+  rappyMsg.style.color = ok ? '#86efac' : '#fca5a5';
+  rappyMsg.classList.add('on');
+}
+$('btnRappyClose').onclick = ()=> rappyModal.classList.remove('on');
+$('rappyGrant').onclick = ()=>{
+  if(!isRappy) return;
+  const id = $('rappySkin').value;
+  const s = getSkin(id);
+  if(!unlocked.includes(id)) unlocked.push(id);
+  skinId = id; save();
+  rpMsg(`Granted ${s.name}.`, true);
+  updateGems();
+  if(views.skins.classList.contains('active')) renderSkins();
+  if(views.home.classList.contains('active')) drawPreview($('homePreview').getContext('2d'), getSkin(skinId), 140);
+  flash(`Unlocked ${s.name}!`);
+};
+
 /* -------------------- BOOT -------------------- */
 (async ()=>{
   updateGems();
@@ -770,11 +952,10 @@ sb.auth.onAuthStateChange(async (event, session)=>{
   if(event==='SIGNED_IN' && session?.user && !currentUser){
     await onSignedIn(session.user);
   } else if(event==='SIGNED_OUT'){
-    currentUser=null; currentUsername=null; isAdmin=false;
+    currentUser=null; currentUsername=null; isAdmin=false; isRappy=false;
     updateUserBtn(); updateAdminBtn();
   }
 });
 </script>
 </body>
 </html>
-
